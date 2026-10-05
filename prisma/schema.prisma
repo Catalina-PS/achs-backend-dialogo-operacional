@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// USUARIO
+model Usuario {
+  id          String             @id @default(uuid())
+  codigo      String?            @unique
+  nombre      String
+  correo      String             @unique
+  rol         Rol                @default(ADC)
+  estado      EstadoUsuario      @default(ACTIVO)
+  centros     Centro[]
+  operaciones NuestraOperacion[]
+}
+
+// CENTRO
+model Centro {
+  id         String                @id @default(uuid())
+  usuarioId  String?
+  codigo     String?               @unique
+  nombre     String
+  tipoCentro String?
+  estado     EstadoCentro          @default(ACTIVO)
+  usuario    Usuario?              @relation(fields: [usuarioId], references: [id])
+  dotaciones Dotacion[]
+  respuestas RespuestaFormulario[]
+}
+
+model Periodo {
+  id           String                @id @default(uuid())
+  numeroSemana Int
+  anio         Int
+  fechaDesde   DateTime
+  fechaHasta   DateTime
+  dotaciones   Dotacion[]
+  contenidos   Contenido[]
+  documentos   Documento[]
+  respuestas   RespuestaFormulario[]
+
+  @@unique([anio, numeroSemana])
+}
+
+model Dotacion {
+  id                String   @id @default(uuid())
+  centroId          String
+  periodoId         String
+  dotacion          Int
+  fechaCreacion     DateTime @default(now())
+  fechaModificacion DateTime @updatedAt
+  centro            Centro   @relation(fields: [centroId], references: [id])
+  periodo           Periodo  @relation(fields: [periodoId], references: [id])
+
+  @@unique([centroId, periodoId])
+}
+
+model Proposito {
+  id         String    @id @default(uuid())
+  contenido  String
+  fechaDesde DateTime  @default(now())
+  fechaHasta DateTime?
+}
+
+model Principio {
+  id          String              @id @default(uuid())
+  nombre      String
+  descripcion String?
+  orden       Int
+  color       String
+  fechaDesde  DateTime            @default(now())
+  fechaHasta  DateTime?
+  respuestas  RespuestaPregunta[]
+}
+
+model NuestraOperacion {
+  id         String    @id @default(uuid())
+  usuarioId  String
+  contenido  String
+  orden      Int
+  fechaDesde DateTime  @default(now())
+  fechaHasta DateTime?
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
+}
+
+model Contenido {
+  id                String        @id @default(uuid())
+  periodoId         String
+  tipo              TipoContenido
+  orden             Int
+  area              String?
+  titulo            String
+  mensaje           String?
+  fechaCreacion     DateTime      @default(now())
+  fechaModificacion DateTime      @updatedAt
+  periodo           Periodo       @relation(fields: [periodoId], references: [id])
+}
+
+model Documento {
+  id                String   @id @default(uuid())
+  periodoId         String
+  tipo              String
+  nombreArchivo     String
+  rutaArchivo       String
+  fechaCreacion     DateTime @default(now())
+  fechaModificacion DateTime @updatedAt
+  periodo           Periodo  @relation(fields: [periodoId], references: [id])
+}
+
+model RespuestaFormulario {
+  id               String              @id @default(uuid())
+  formsRespuestaId String              @unique
+  centroId         String
+  periodoId        String
+  fechaRespuesta   DateTime
+  centro           Centro              @relation(fields: [centroId], references: [id])
+  periodo          Periodo             @relation(fields: [periodoId], references: [id])
+  detalle          RespuestaPregunta[]
+
+  @@index([centroId, periodoId])
+}
+
+model Pregunta {
+  id            String              @id @default(uuid())
+  tipoPregunta  TipoPregunta
+  textoPregunta String
+  estado        EstadoPregunta      @default(ACTIVA)
+  respuestas    RespuestaPregunta[]
+}
+
+model RespuestaPregunta {
+  id             String              @id @default(uuid())
+  respuestaId    String
+  preguntaId     String
+  valorRespuesta String?
+  principioId    String?
+  respuesta      RespuestaFormulario @relation(fields: [respuestaId], references: [id], onDelete: Cascade)
+  pregunta       Pregunta            @relation(fields: [preguntaId], references: [id])
+  principio      Principio?          @relation(fields: [principioId], references: [id])
+
+  @@unique([respuestaId, preguntaId])
+}
+
+enum Rol {
+  ADC
+  EQUIPO_CENTRAL
+}
+
+enum TipoContenido {
+  NOTICIA
+  ENTRENAMIENTO
+}
+
+enum TipoPregunta {
+  ANIMO
+  PERSONA
+  PRINCIPIO
+}
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoCentro {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoPregunta {
+  ACTIVA
+  INACTIVA
+}
